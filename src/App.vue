@@ -33,42 +33,32 @@
             >
             <div class="mt-1 relative rounded-md shadow-md">
               <input
+                v-model="ticker"
                 type="text"
                 name="wallet"
                 id="wallet"
                 class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
-                v-model="ticker"
                 @keydown.enter="addTicker"
               />
             </div>
             <div
+              v-if = "ticker"
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
               <span
+                v-for = "(coin,idx) in getCoinsList(ticker)"
+                :key = "idx"
+                @click = "addCoin(coin)"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
-                BTC
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                DOGE
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                BCH
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                CHD
+                {{coin}} 
               </span>
             </div>
             <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
           </div>
         </div>
         <button
+          @click = "addTicker()"
           type="button"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
@@ -180,18 +170,35 @@
 <script>
 export default {
   name: "App",
-  data: () => ({
-    ticker: "",
-    tickers: [],
-    sell: null,
-    graph: [],
-  }),
+  data () {
+    return {
+      ticker: "",
+      tickers: [],
+      sell: null,
+      graph: [],
+      coinsList: []
+    }
+  },
+  
+  async created() {
+    const res = await fetch(
+          `https://min-api.cryptocompare.com/data/all/coinlist?summary=true`,
+        );
+    const coins = await res.json();
+    this.coinsList.push(...Object.values(coins.Data))
+    this.coinsList = this.coinsList.map(el => el.Symbol)
+  },
+
   methods: {
     addTicker() {
       const currentTicker = {
         name: this.ticker,
         price: "-",
       };
+      
+      for(let addedTicker of this.tickers) {
+        if(addedTicker.name === this.ticker) return;
+      }
 
       this.tickers.push(currentTicker);
 
@@ -201,8 +208,7 @@ export default {
         );
         const data = await res.json();
 
-        this.tickers.find((el) => el.name === currentTicker.name).price =
-          data.USD;
+        this.tickers.find((el) => el.name === currentTicker.name).price = data.USD;
 
         if (this.sell?.name === currentTicker.name) {
           this.graph.push(data.USD);
@@ -217,14 +223,6 @@ export default {
     },
 
     normalizeGraphHeight() {
-      // const maxHeight = 16;
-
-      // const maxPrice = Math.max(...this.graph);
-
-      // return this.graph.map(el => (
-      //   maxHeight * 0.01 * (el / (maxPrice * 0.01))
-      //   )
-      // )
       const maxValue = Math.max(...this.graph);
       const minValue = Math.min(...this.graph);
 
@@ -237,6 +235,22 @@ export default {
       this.sell = ticker;
       this.graph = [];
     },
+
+    getCoinsList(ticker) {
+      ticker = ticker.toLowerCase();
+
+      return this.coinsList.filter(el => el.toLowerCase().includes(ticker)).slice(0,5)
+    },
+
+    addCoin(coin) {
+      this.ticker = coin;
+      this.addTicker()
+    },
+
+    checkDublicate() {
+      return this.tickers.includes(this.ticker)
+    }
+
   },
 };
 </script>
