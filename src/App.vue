@@ -27,23 +27,50 @@
     <div class="container">
       <section>
         <InputField
-          :tickerProp = "ticker"
-          :coins = "getCoinsList"
+          :tickerProp="ticker"
+          :coins="getCoinsList"
           @addTicker="addTicker"
-          @addCoin = "addCoin"
-         />
+          @addCoin="addCoin"
+        />
         <!-- TODO: заставить это работать корректно, если такое возможно-->
-        <AddButton :addTicker = "addTicker">Добавить</AddButton> 
+        <AddButton :addTicker="addTicker">Добавить</AddButton>
       </section>
       <template v-if="tickers.length">
+        <!-- <Filter TODO: сделать так, чтобы работало
+          :filter = "filter"
+          :page = "page"
+          :hasNextPage = "hasNextPage"  
+        /> -->
+        <div>
+          Фильтр :<input
+            v-model="filter"
+            type="text"
+            class="block w-52 pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+          />
+        </div>
+        <div class="flex justify-items-end">
+          <button
+            v-if="page > 1"
+            @click="page = page - 1"
+            type="button"
+            class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Назад
+          </button>
+          <button
+            v-if="hasNextPage"
+            @click="page = page + 1"
+            type="button"
+            class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Вперед
+          </button>
+        </div>
+
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <!-- <ticker/> -->
-          <Tickers
-            :tickers = "tickers"
-            :sell = "sell"
-            @select = "select"
-          />
+          <Tickers :tickers="filteredTickers()" :sell="sell" @select="select" />
           <!-- <ticker /> -->
         </dl>
         <hr class="w-full border-t border-gray-600 my-4" />
@@ -99,36 +126,40 @@
 import InputField from "@/components/input-field.vue";
 import AddButton from "@/components/add-button.vue";
 import Tickers from "@/components/ticker.vue";
+// import Filter from "@/components/filter.vue";
 
 export default {
   name: "App",
-  components: {InputField, AddButton, Tickers},
-  data () {
+  components: { InputField, AddButton, Tickers },
+  data() {
     return {
       ticker: "",
       tickers: [],
       sell: null,
       graph: [],
-      coinsList: []
-    }
+      coinsList: [],
+      filter: "",
+      page: 1,
+      hasNextPage: true,
+    };
   },
-  
+
   async created() {
     const res = await fetch(
-          `https://min-api.cryptocompare.com/data/all/coinlist?summary=true`,
-        );
+      `https://min-api.cryptocompare.com/data/all/coinlist?summary=true`,
+    );
     const coins = await res.json();
-    this.coinsList.push(...Object.values(coins.Data))
-    this.coinsList = this.coinsList.map(coin => coin.Symbol)
+    this.coinsList.push(...Object.values(coins.Data));
+    this.coinsList = this.coinsList.map((coin) => coin.Symbol);
   },
 
   mounted() {
     const tickersData = localStorage.getItem("crypto-list");
 
-    if(tickersData) {
-      this.tickers = JSON.parse(tickersData)
-      
-      this.tickers.forEach(ticker => this.updatePrice(ticker.name))
+    if (tickersData) {
+      this.tickers = JSON.parse(tickersData);
+
+      this.tickers.forEach((ticker) => this.updatePrice(ticker.name));
     }
   },
 
@@ -145,7 +176,6 @@ export default {
         if (this.sell?.name === tickerName) {
           this.graph.push(data.USD);
         }
-
       }, 3000);
     },
 
@@ -154,18 +184,17 @@ export default {
         name: this.ticker,
         price: "-",
       };
-      
-      for(let addedTicker of this.tickers) {
-        if(addedTicker.name === this.ticker) return;
+
+      for (let addedTicker of this.tickers) {
+        if (addedTicker.name === this.ticker) return;
       }
 
-      this.updatePrice(currentTicker.name)
+      this.updatePrice(currentTicker.name);
 
       this.tickers.push(currentTicker);
+      this.filter = "";
 
-      localStorage.setItem("crypto-list",JSON.stringify(this.tickers))
-
-      
+      localStorage.setItem("crypto-list", JSON.stringify(this.tickers));
 
       this.ticker = "";
     },
@@ -191,18 +220,31 @@ export default {
     getCoinsList(ticker) {
       ticker = ticker.toLowerCase();
 
-      return this.coinsList.filter(el => el.toLowerCase().includes(ticker)).slice(0,4)
+      return this.coinsList
+        .filter((el) => el.toLowerCase().includes(ticker))
+        .slice(0, 4);
     },
 
     addCoin(coin) {
       this.ticker = coin;
-      this.addTicker()
+      this.addTicker();
     },
 
     checkDublicate() {
-      return this.tickers.includes(this.ticker)
-    }
+      return this.tickers.includes(this.ticker);
+    },
 
+    filteredTickers() {
+      const start = (this.page - 1) * 6;
+      const end = this.page * 6;
+
+      const filteredTickers = this.tickers.filter((ticker) =>
+        ticker.name.includes(this.filter),
+      );
+      this.hasNextPage = filteredTickers.length > end;
+
+      return filteredTickers.slice(start, end);
+    },
   },
 };
 </script>
