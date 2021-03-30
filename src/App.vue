@@ -27,7 +27,7 @@
     <div class="container">
       <section>
         <InputField
-          :ticker = "ticker"
+          :tickerProp = "ticker"
           :coins = "getCoinsList"
           @addTicker="addTicker"
           @addCoin = "addCoin"
@@ -42,7 +42,6 @@
           <Tickers
             :tickers = "tickers"
             :sell = "sell"
-            @remove = "deleteTicker"
             @select = "select"
           />
           <!-- <ticker /> -->
@@ -120,10 +119,36 @@ export default {
         );
     const coins = await res.json();
     this.coinsList.push(...Object.values(coins.Data))
-    this.coinsList = this.coinsList.map(el => el.Symbol)
+    this.coinsList = this.coinsList.map(coin => coin.Symbol)
+  },
+
+  mounted() {
+    const tickersData = localStorage.getItem("crypto-list");
+
+    if(tickersData) {
+      this.tickers = JSON.parse(tickersData)
+      
+      this.tickers.forEach(ticker => this.updatePrice(ticker.name))
+    }
   },
 
   methods: {
+    updatePrice(tickerName) {
+      setInterval(async () => {
+        const res = await fetch(
+          `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=a702990e9a088e4f6c2093af65a63ce15b25ddc1a07548dc445cff1b566fcd8f`,
+        );
+        const data = await res.json();
+
+        this.tickers.find((el) => el.name === tickerName).price = data.USD;
+
+        if (this.sell?.name === tickerName) {
+          this.graph.push(data.USD);
+        }
+
+      }, 3000);
+    },
+
     addTicker() {
       const currentTicker = {
         name: this.ticker,
@@ -134,28 +159,20 @@ export default {
         if(addedTicker.name === this.ticker) return;
       }
 
+      this.updatePrice(currentTicker.name)
+
       this.tickers.push(currentTicker);
 
-      setInterval(async () => {
-        const res = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=a702990e9a088e4f6c2093af65a63ce15b25ddc1a07548dc445cff1b566fcd8f`,
-        );
-        const data = await res.json();
+      localStorage.setItem("crypto-list",JSON.stringify(this.tickers))
 
-        this.tickers.find((el) => el.name === currentTicker.name).price = data.USD;
-
-        if (this.sell?.name === currentTicker.name) {
-          this.graph.push(data.USD);
-        }
-
-      }, 3000);
+      
 
       this.ticker = "";
     },
 
-    deleteTicker(currentTicker) {
-      this.tickers = this.tickers.filter((el) => el !== currentTicker);
-    },
+    // deleteTicker(currentTicker) {
+    //   this.tickers = this.tickers.filter((el) => el !== currentTicker);
+    // },
 
     normalizeGraphHeight() {
       const maxValue = Math.max(...this.graph);

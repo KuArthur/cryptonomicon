@@ -35,7 +35,7 @@
 <script>
 export default {
   props: {
-    ticker: {
+    tickerProp: {
       type: String,
       required: true,
       default: ""
@@ -45,22 +45,22 @@ export default {
       required: true,
     },
   },
-  // data() {
-  //   return {
-  //     ticker: this.copyTicker(),
-  //   };
-  // },
+  data() {
+    return {
+      ticker: this.copyTicker(),
+    };
+  },
   methods: {
     addTicker() {
       this.$emit("addTicker", this.ticker);
     },
 
-    // copyTicker() {
-    //   //TODO: почему не работало без копирования (в примере работало)
-    //   let localTicker = this.tickerProp;
+    copyTicker() {
+      //TODO: почему не работало без копирования (в примере работало)
+      let localTicker = this.tickerProp;
 
-    //   return localTicker;
-    // },
+      return localTicker;
+    },
     addCoin(coin) {
       this.$emit("addCoin", coin);
     },
