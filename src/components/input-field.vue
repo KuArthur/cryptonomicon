@@ -35,31 +35,32 @@
 <script>
 export default {
   props: {
-    tickerProp: {
+    ticker: {
       type: String,
       required: true,
+      default: ""
     },
     coins: {
-      type: Array,
+      type: Function,
       required: true,
     },
   },
-  data() {
-    return {
-      ticker: this.copyTicker(),
-    };
-  },
+  // data() {
+  //   return {
+  //     ticker: this.copyTicker(),
+  //   };
+  // },
   methods: {
     addTicker() {
       this.$emit("addTicker", this.ticker);
     },
 
-    copyTicker() {
-      //TODO: почему не работало без копирования (в примере работало)
-      let localTicker = this.tickerProp;
+    // copyTicker() {
+    //   //TODO: почему не работало без копирования (в примере работало)
+    //   let localTicker = this.tickerProp;
 
-      return localTicker;
-    },
+    //   return localTicker;
+    // },
     addCoin(coin) {
       this.$emit("addCoin", coin);
     },
