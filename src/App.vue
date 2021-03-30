@@ -28,12 +28,13 @@
       <section>
         <InputField
           :tickerProp="ticker"
+          @update:tickerProp="ticker = $event"
           :coins="getCoinsList"
-          @addTicker="addTicker"
+          @addTicker = "addTicker"
           @addCoin="addCoin"
         />
         <!-- TODO: заставить это работать корректно, если такое возможно-->
-        <AddButton :addTicker="addTicker">Добавить</AddButton>
+        <!-- <AddButton :addTicker="addTicker">Добавить</AddButton> -->
       </section>
       <template v-if="tickers.length">
         <!-- <Filter TODO: сделать так, чтобы работало
@@ -70,7 +71,12 @@
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <!-- <ticker/> -->
-          <Tickers :tickers="filteredTickers()" :sell="sell" @select="select" />
+          <Tickers 
+            :tickers="filteredTickers()" 
+            :sell="sell" 
+            @select="select" 
+            @remove="deleteTicker"
+          />
           <!-- <ticker /> -->
         </dl>
         <hr class="w-full border-t border-gray-600 my-4" />
@@ -124,13 +130,13 @@
 
 <script>
 import InputField from "@/components/input-field.vue";
-import AddButton from "@/components/add-button.vue";
+// import AddButton from "@/components/add-button.vue";
 import Tickers from "@/components/ticker.vue";
 // import Filter from "@/components/filter.vue";
 
 export default {
   name: "App",
-  components: { InputField, AddButton, Tickers },
+  components: { InputField, Tickers },
   data() {
     return {
       ticker: "",
@@ -160,6 +166,12 @@ export default {
       this.tickers = JSON.parse(tickersData);
 
       this.tickers.forEach((ticker) => this.updatePrice(ticker.name));
+    }
+  },
+
+  watch: {
+    filter() {
+      this.page = 1;
     }
   },
 
@@ -197,11 +209,12 @@ export default {
       localStorage.setItem("crypto-list", JSON.stringify(this.tickers));
 
       this.ticker = "";
+      
     },
 
-    // deleteTicker(currentTicker) {
-    //   this.tickers = this.tickers.filter((el) => el !== currentTicker);
-    // },
+    deleteTicker(currentTicker) {
+      this.tickers = this.tickers.filter((el) => el !== currentTicker);
+    },
 
     normalizeGraphHeight() {
       const maxValue = Math.max(...this.graph);

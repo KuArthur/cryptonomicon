@@ -48,7 +48,6 @@ export default {
             required: true
         },
         sell: {
-            type: Object,
             required: true,
             default: null
         }
